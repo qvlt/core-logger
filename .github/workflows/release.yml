@@ -1,22 +1,22 @@
+# .github/workflows/release.yml
 name: Release
 
 on:
   push:
-    tags:
-      - 'v*'
-  workflow_dispatch:
+    tags: ['v*'] # e.g. v1.2.3
+
+permissions:
+  contents: write # create GitHub Releases
+  checks: read # (if you add API-based gating later)
+  id-token: write # npm provenance
 
 concurrency:
-  group: release-${{ github.workflow }}-${{ github.ref }}
+  group: release-${{ github.ref }}
   cancel-in-progress: false
 
 jobs:
   release:
-    name: Release
     runs-on: ubuntu-latest
-    permissions:
-      contents: write
-      id-token: write
 
     steps:
       - name: Checkout
