@@ -1,0 +1,17 @@
+{
+  "name": "@qvlt/core-logger-example",
+  "version": "1.0.0",
+  "description": "Example project using @qvlt/core-logger",
+  "type": "module",
+  "private": true,
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js"
+  },
+  "dependencies": {
+    "@qvlt/core-logger": "file:.."
+  },
+  "devDependencies": {
+    "typescript": "^5.9.2"
+  }
+}

@@ -31,7 +31,8 @@
     "lint": "eslint . --ext .ts,.tsx,.js,.jsx",
     "lint:fix": "eslint . --ext .ts,.tsx,.js,.jsx --fix",
     "format": "prettier --ignore-path node_modules/@qvlt/config-prettier/ignore --write .",
-    "format:check": "prettier --ignore-path node_modules/@qvlt/config-prettier/ignore --check ."
+    "format:check": "prettier --ignore-path node_modules/@qvlt/config-prettier/ignore --check .",
+    "release:tag": "bash -lc 'set -euxo pipefail; [ \"$(git rev-parse --abbrev-ref HEAD)\" = main ] || { echo \"Error: run on main\"; exit 1; }; V=$(node -p \"require(\\\"./package.json\\\").version\"); git tag v$V -m \"Release $V\"; git push origin v$V'"
   },
   "dependencies": {
     "tslib": "^2.6.2"
