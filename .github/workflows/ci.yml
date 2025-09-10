@@ -3,19 +3,24 @@ name: CI
 on:
   push:
     branches: [main, dev]
+    tags-ignore: ['v*']
   pull_request:
     branches: [main, dev]
-  workflow_dispatch:
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-  test:
-    name: Test on Node.js ${{ matrix.node-version }}
+  quality:
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         node-version: [18.x, 20.x, 22.x]
 
@@ -23,31 +28,23 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup Node.js ${{ matrix.node-version }}
-        uses: actions/setup-node@v4
-        with:
-          node-version: ${{ matrix.node-version }}
-
       - name: Setup pnpm
         uses: pnpm/action-setup@v4
         with:
           version: 10.15.0
 
-      - name: Get pnpm store directory
-        shell: bash
-        run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
+      - name: Setup Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v4
         with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
+          node-version: ${{ matrix.node-version }}
+          cache: pnpm
 
-      - name: Install dependencies
+      - name: Install root dependencies (strict)
         run: pnpm install --frozen-lockfile
+
+      - name: Install example deps (isolated)
+        working-directory: example
+        run: pnpm install --no-frozen-lockfile
 
       - name: Lint
         run: pnpm run lint
@@ -64,44 +61,16 @@ jobs:
       - name: Smoke test
         run: pnpm run smoke
 
-  pack-preview:
-    name: Pack preview
-    runs-on: ubuntu-latest
-    if: matrix.node-version == '22.x'
-    needs: test
-
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Setup Node.js 22.x
-        uses: actions/setup-node@v4
-        with:
-          node-version: 22.x
-
-      - name: Setup pnpm
-        uses: pnpm/action-setup@v4
-        with:
-          version: 10.15.0
-
-      - name: Get pnpm store directory
-        shell: bash
+      - name: Pack preview (what would publish)
+        if: matrix.node-version == '22.x'
         run: |
-          echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
-
-      - name: Setup pnpm cache
-        uses: actions/cache@v4
-        with:
-          path: ${{ env.STORE_PATH }}
-          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
-          restore-keys: |
-            ${{ runner.os }}-pnpm-store-
-
-      - name: Install dependencies
-        run: pnpm install --frozen-lockfile
-
-      - name: Build
-        run: pnpm run build
-
-      - name: Pack preview
-        run: pnpm pack --dry-run
+          set -euo pipefail
+          OUT="$(pnpm pack)"
+          echo "$OUT"
+          PKG="$(echo "$OUT" | grep -Eo '[^[:space:]]+\.tgz$' | tail -n1)"
+          if [ -z "${PKG:-}" ] || [ ! -f "$PKG" ]; then
+            echo "Could not determine tarball filename from pnpm output"; exit 1;
+          fi
+          echo "Tarball: $PKG"
+          tar -tf "$PKG"
+          rm -f "$PKG"

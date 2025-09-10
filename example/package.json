@@ -6,7 +6,9 @@
   "private": true,
   "scripts": {
     "start": "node index.js",
-    "test": "node test.js"
+    "test": "node test.js",
+    "lint": "echo 'No linting configured'",
+    "type-check": "echo 'No type checking configured'"
   },
   "dependencies": {
     "@qvlt/core-logger": "file:.."
