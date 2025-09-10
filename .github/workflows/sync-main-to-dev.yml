@@ -7,122 +7,66 @@ on:
   workflow_dispatch: {} # optional for testing
 
 permissions:
-  contents: write          # needed to merge
-  pull-requests: write     # needed to create PRs
+  contents: write # needed to merge
+  pull-requests: write # needed to create PRs
 
 concurrency:
   group: sync-main-to-dev
   cancel-in-progress: true
 
 jobs:
-  sync:
-    name: Sync main to dev
-    runs-on: ubuntu-latest
+  open-and-merge-now:
     if: ${{ github.event.workflow_run.conclusion == 'success' || github.event_name == 'workflow_dispatch' }}
-    permissions:
-      contents: write
-      pull-requests: write
-
+    runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Open PR and try immediate merge (MERGE only)
+        uses: actions/github-script@v7
         with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          fetch-depth: 0
+          github-token: ${{ secrets.GITHUB_TOKEN }} # use a PAT only if your policies require it
+          script: |
+            const { owner, repo } = context.repo;
+            const base = 'dev';
+            const head = 'main';
 
-      - name: Check if sync PR already exists
-        id: check-pr
-        run: |
-          EXISTING_PR=$(gh pr list --head dev --base dev --state open --json number --jq '.[0].number' || echo "")
-          if [ -n "$EXISTING_PR" ]; then
-            echo "Sync PR already exists: #$EXISTING_PR"
-            echo "exists=true" >> $GITHUB_OUTPUT
-            echo "pr_number=$EXISTING_PR" >> $GITHUB_OUTPUT
-          else
-            echo "No existing sync PR found"
-            echo "exists=false" >> $GITHUB_OUTPUT
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            // 1) Find or create PR main -> dev
+            const existing = await github.paginate(github.rest.pulls.list, {
+              owner, repo, state: 'open', base, head: `${owner}:${head}`
+            });
+            let pr = existing[0];
+            if (!pr) {
+              const created = await github.rest.pulls.create({
+                owner, repo, base, head,
+                title: 'chore: sync main → dev',
+                body: 'Automated back-merge after successful Release workflow.'
+              });
+              pr = created.data;
+              core.info(`Opened PR #${pr.number}`);
+            } else {
+              core.info(`Sync PR already open: #${pr.number}`);
+            }
 
-      - name: Create sync PR
-        if: steps.check-pr.outputs.exists == 'false'
-        run: |
-          # Fetch latest changes
-          git fetch origin main dev
-          
-          # Check if dev is behind main
-          BEHIND=$(git rev-list --count dev..main)
-          if [ "$BEHIND" -eq 0 ]; then
-            echo "dev is already up to date with main"
-            exit 0
-          fi
-          
-          # Create and push sync branch
-          SYNC_BRANCH="sync-main-to-dev-$(date +%Y%m%d-%H%M%S)"
-          git checkout -b "$SYNC_BRANCH" dev
-          git merge main --no-edit
-          git push origin "$SYNC_BRANCH"
-          
-          # Create PR
-          PR_NUMBER=$(gh pr create \
-            --title "Sync main to dev" \
-            --body "Automatically created sync PR to merge main into dev after successful release." \
-            --base dev \
-            --head "$SYNC_BRANCH" \
-            --json number \
-            --jq '.number')
-          
-          echo "Created sync PR: #$PR_NUMBER"
-          echo "pr_number=$PR_NUMBER" >> $GITHUB_OUTPUT
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            // 2) Wait briefly for mergeability to compute, then attempt immediate MERGE
+            async function waitForMergeable(pull_number, attempts = 10, delayMs = 5000) {
+              for (let i = 0; i < attempts; i++) {
+                const r = await github.rest.pulls.get({ owner, repo, pull_number });
+                const state = r.data.mergeable_state; // 'clean','blocked','dirty','unknown',...
+                core.info(`mergeable_state: ${state}`);
+                if (state && state !== 'unknown') return r.data;
+                await new Promise((res) => setTimeout(res, delayMs));
+              }
+              return (await github.rest.pulls.get({ owner, repo, pull_number })).data;
+            }
 
-      - name: Wait for PR to be mergeable
-        if: steps.check-pr.outputs.exists == 'false'
-        run: |
-          PR_NUMBER="${{ steps.create-pr.outputs.pr_number || steps.check-pr.outputs.pr_number }}"
-          echo "Waiting for PR #$PR_NUMBER to be mergeable..."
-          
-          # Wait up to 50 seconds for GitHub to compute merge status
-          for i in {1..10}; do
-            MERGEABLE=$(gh pr view "$PR_NUMBER" --json mergeable --jq '.mergeable')
-            if [ "$MERGEABLE" = "true" ]; then
-              echo "PR is mergeable"
-              break
-            elif [ "$MERGEABLE" = "false" ]; then
-              echo "PR has merge conflicts, leaving open for manual review"
-              exit 0
-            else
-              echo "PR merge status not yet computed, waiting... ($i/10)"
-              sleep 5
-            fi
-          done
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            const prData = await waitForMergeable(pr.number);
+            const sha = prData.head.sha;
 
-      - name: Merge sync PR
-        if: steps.check-pr.outputs.exists == 'false'
-        run: |
-          PR_NUMBER="${{ steps.create-pr.outputs.pr_number || steps.check-pr.outputs.pr_number }}"
-          echo "Merging PR #$PR_NUMBER..."
-          
-          # Attempt to merge immediately
-          if gh pr merge "$PR_NUMBER" --merge --delete-branch; then
-            echo "Successfully merged sync PR"
-          else
-            echo "Failed to merge sync PR, leaving open for manual review"
-            # Don't fail the workflow - the PR is still created and can be merged manually
-          fi
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Comment on existing PR
-        if: steps.check-pr.outputs.exists == 'true'
-        run: |
-          PR_NUMBER="${{ steps.check-pr.outputs.pr_number }}"
-          echo "Commenting on existing sync PR #$PR_NUMBER..."
-          
-          gh pr comment "$PR_NUMBER" --body "Release workflow completed successfully. This sync PR is ready for review/merge."
-        env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+            try {
+              await github.rest.pulls.merge({
+                owner, repo, pull_number: pr.number,
+                merge_method: 'merge', // no squash/rebase
+                sha
+              });
+              core.info('PR merged immediately via MERGE.');
+            } catch (e) {
+              core.notice(`Immediate merge blocked (leaving PR open): ${e.status ?? ''} ${e.message}`);
+            }
