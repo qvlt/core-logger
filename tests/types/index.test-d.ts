@@ -1,6 +1,6 @@
 import { expectType } from 'tsd';
 
-import * as pkg from '../../../dist';
+import * as pkg from '../../dist';
 
 expectType<{
   (): unknown;

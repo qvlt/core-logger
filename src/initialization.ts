@@ -46,7 +46,7 @@ export function getLogger(component?: string): LoggerInterface {
     const createLogMethod =
       (level: 'debug' | 'info' | 'warn' | 'error') =>
       (event: string, context?: Record<string, unknown>, error?: unknown) => {
-        const consoleMethod = (console as any)[level];
+        const consoleMethod = (console as unknown as Record<string, (...args: unknown[]) => void>)[level];
         if (consoleMethod) {
           const prefix = component ? `[${component}]` : '';
           consoleMethod(`${prefix} ${event}`, context ?? '', error ?? '');
