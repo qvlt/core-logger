@@ -12,7 +12,7 @@ export class HttpTransport implements Transport {
       try {
         const ok = (navigator as Navigator & { sendBeacon: (url: string, data: BodyInit) => boolean }).sendBeacon(
           this.endpoint,
-          new Blob([body], { type: 'application/json' })
+          new Blob([body], { type: 'application/json' }),
         );
         if (ok) return;
       } catch {
