@@ -17,10 +17,7 @@ export default [
     files: ['tests/**/*.{ts,tsx,js,jsx}'],
     plugins: { import: importPlugin },
     rules: {
-      'import/no-extraneous-dependencies': [
-        'error',
-        { devDependencies: true, peerDependencies: true },
-      ],
+      'import/no-extraneous-dependencies': ['error', { devDependencies: true, peerDependencies: true }],
     },
   },
 
@@ -38,16 +35,6 @@ export default [
         console: 'readonly',
         setTimeout: 'readonly',
         clearTimeout: 'readonly',
-        setInterval: 'readonly',
-        clearInterval: 'readonly',
-        process: 'readonly',
-        Buffer: 'readonly',
-        global: 'readonly',
-        __dirname: 'readonly',
-        __filename: 'readonly',
-        module: 'readonly',
-        require: 'readonly',
-        exports: 'readonly',
       },
     },
     rules: {

@@ -34,6 +34,7 @@ pnpm run release:tag
 ```
 
 This script will:
+
 - Verify you're on the `main` branch
 - Read the version from `package.json`
 - Create a git tag with the format `v{version}`
@@ -111,7 +112,7 @@ If the GitHub Actions workflow fails:
 
 - **main**: Production releases only
 - **dev**: Development branch for new features
-- **feature/***: Feature branches created from `dev`
+- **feature/\***: Feature branches created from `dev`
 
 ## Manual Testing
 

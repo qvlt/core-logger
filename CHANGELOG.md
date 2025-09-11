@@ -8,6 +8,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+
 - Initial release of @qvlt/core-logger
 - Universal structured logging for browser and Node.js environments
 - Transport-based architecture with Console, HTTP, and Stdout transports
@@ -20,6 +21,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Example project demonstrating usage patterns
 
 ### Features
+
 - **ConsoleTransport**: Pretty-prints logs for development
 - **HttpTransport**: Sends logs to HTTP endpoints with browser/Node.js support
 - **StdoutTransport**: JSONL output for containerized environments
@@ -32,6 +34,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [0.0.1] - 2024-09-10
 
 ### Added
+
 - Initial release
 - Core logging functionality
 - Transport system

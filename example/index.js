@@ -22,11 +22,15 @@ async function main() {
 
   // Example 2: Performance Timing
   console.log('\n2. Performance Timing:');
-  const result = await logger.time('api.request', async () => {
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 100));
-    return { data: 'success' };
-  }, { endpoint: '/api/data' });
+  const result = await logger.time(
+    'api.request',
+    async () => {
+      // Simulate API call
+      await new Promise((resolve) => setTimeout(resolve, 100));
+      return { data: 'success' };
+    },
+    { endpoint: '/api/data' },
+  );
   console.log('Result:', result);
 
   // Example 3: Child Logger
@@ -42,10 +46,7 @@ async function main() {
     env: 'production',
     ver: '1.0.0',
     level: 'info',
-    transport: [
-      new ConsoleTransport(),
-      new StdoutTransport(),
-    ],
+    transport: [new ConsoleTransport(), new StdoutTransport()],
   });
 
   const multiLogger = getLogger('multi-transport');

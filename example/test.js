@@ -31,7 +31,7 @@ async function runTests() {
   // Test 4: Performance timing
   console.log('\nTest 4: Performance timing');
   const result = await logger.time('test.timing', async () => {
-    await new Promise(resolve => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 50));
     return { success: true };
   });
   console.log('✅ Timing test completed:', result);

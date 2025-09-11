@@ -37,8 +37,8 @@ jobs:
           registry-url: https://registry.npmjs.org/
           always-auth: true
 
-      - name: Install dependencies (strict)
-        run: pnpm install --frozen-lockfile
+      - name: Install dependencies (workspace, strict)
+        run: pnpm -w install --frozen-lockfile
 
       - name: Extract version from tag
         id: version
@@ -54,13 +54,8 @@ jobs:
           test "$CURRENT_VERSION" = "$VERSION"
 
       # 🔒 QUALITY GATE — must pass before publish
-      - name: Install example deps (isolated)
-        working-directory: example
-        run: pnpm install --no-frozen-lockfile
-
       - name: Lint example (no warnings allowed)
-        working-directory: example
-        run: pnpm exec eslint . --ext .ts,.tsx,.js,.jsx --max-warnings=0
+        run: pnpm -w exec eslint example --ext .ts,.tsx,.js,.jsx --max-warnings=0
 
       # (Type-check step removed per your preference)
 

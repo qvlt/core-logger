@@ -39,12 +39,8 @@ jobs:
           node-version: ${{ matrix.node-version }}
           cache: pnpm
 
-      - name: Install root dependencies (strict)
-        run: pnpm install --frozen-lockfile
-
-      - name: Install example deps (isolated)
-        working-directory: example
-        run: pnpm install --no-frozen-lockfile
+      - name: Install dependencies (workspace, strict)
+        run: pnpm -w install --frozen-lockfile
 
       - name: Lint example (no warnings)
         run: pnpm -w exec eslint example --ext .ts,.tsx,.js,.jsx --max-warnings=0
