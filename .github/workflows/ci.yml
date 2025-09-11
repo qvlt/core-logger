@@ -47,8 +47,7 @@ jobs:
         run: pnpm install --no-frozen-lockfile
 
       - name: Lint example (no warnings)
-        working-directory: example
-        run: pnpm exec eslint . --ext .ts,.tsx,.js,.jsx --max-warnings=0
+        run: pnpm -w exec eslint example --ext .ts,.tsx,.js,.jsx --max-warnings=0
 
       # (Type-check intentionally omitted)
 
