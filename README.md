@@ -19,6 +19,8 @@ A universal structured logging library for both browser and Node.js environments
 pnpm add @qvlt/core-logger
 ```
 
+**Requires Node ≥18.18.0** (for built-in fetch).
+
 ## Usage
 
 ### Basic Setup
