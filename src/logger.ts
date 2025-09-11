@@ -154,17 +154,27 @@ export class Logger implements LoggerInterface {
     // Hoist component/traceId out of ctx (if present) so it goes to the top-level field
     let component: string | undefined;
     let traceId: string | undefined;
-    
+
     // Type guard for context with component
-    if (ctx && typeof ctx === 'object' && 'component' in ctx && typeof (ctx as Record<string, unknown>).component === 'string') {
+    if (
+      ctx &&
+      typeof ctx === 'object' &&
+      'component' in ctx &&
+      typeof (ctx as Record<string, unknown>).component === 'string'
+    ) {
       component = (ctx as Record<string, unknown>).component as string;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { component: _ignored, ...rest } = ctx as Record<string, unknown>;
       ctx = rest as BaseCtx;
     }
-    
+
     // Type guard for context with traceId
-    if (ctx && typeof ctx === 'object' && 'traceId' in ctx && typeof (ctx as Record<string, unknown>).traceId === 'string') {
+    if (
+      ctx &&
+      typeof ctx === 'object' &&
+      'traceId' in ctx &&
+      typeof (ctx as Record<string, unknown>).traceId === 'string'
+    ) {
       traceId = (ctx as Record<string, unknown>).traceId as string;
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { traceId: _traceId, ...rest } = ctx as Record<string, unknown>;
