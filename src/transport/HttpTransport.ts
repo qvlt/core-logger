@@ -10,7 +10,10 @@ export class HttpTransport implements Transport {
     // Browser: try sendBeacon
     if (typeof navigator !== 'undefined' && 'sendBeacon' in navigator && body.length < 600_000) {
       try {
-        const ok = (navigator as any).sendBeacon(this.endpoint, new Blob([body], { type: 'application/json' }));
+        const ok = (navigator as Navigator & { sendBeacon: (url: string, data: BodyInit) => boolean }).sendBeacon(
+          this.endpoint,
+          new Blob([body], { type: 'application/json' })
+        );
         if (ok) return;
       } catch {
         /* ignore */

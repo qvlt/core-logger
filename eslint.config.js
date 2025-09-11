@@ -42,4 +42,10 @@ export default [
       '@typescript-eslint/no-unused-vars': 'off',
     },
   },
+  {
+    files: ['src/util/devConsole.ts'],
+    rules: {
+      'no-console': 'off',
+    },
+  },
 ];
